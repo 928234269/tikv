@@ -22,6 +22,8 @@ use super::ScannerConfig;
 /// Use `ScannerBuilder` to build `EntryScanner`.
 pub struct EntryScanner<S: Snapshot> {
     cfg: ScannerConfig<S>,
+    start_ts: u64,
+
     lock_cursor: Cursor<S::Iter>,
     write_cursor: Cursor<S::Iter>,
     /// `default cursor` is lazy created only when it's needed.
@@ -38,6 +40,7 @@ impl<S: Snapshot> EntryScanner<S> {
         write_cursor: Cursor<S::Iter>,
     ) -> EntryScanner<S> {
         EntryScanner {
+            start_ts: cfg.ts,
             cfg,
             lock_cursor,
             write_cursor,
@@ -72,7 +75,8 @@ impl<S: Snapshot> EntryScanner<S> {
             self.is_started = true;
         }
 
-        // The general idea is to simultaneously step write cursor and lock cursor.
+        // The general idea is to step lock cursor first check whether there is
+        // and lock, then step write cursor.
 
         // TODO: We don't need to seek lock CF if isolation level is RC.
 
